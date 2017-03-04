@@ -22,90 +22,77 @@ public:
 };
 
 template < typename T>
-class container {
-	T* raw;
+class container : public Ref{
+	T* mRaw;
 public:
-	container() {
-		raw = nullptr;
+	container():
+	mRaw(0)
+	{
 	}
 
 	container(T tmp) {
-		this->raw = new T;
-		*raw = tmp;
-	}
-
-	container(const T& tmp, int x = 0) {
-		this->raw = new T;
-		*raw = tmp;
+		mRaw = new T(tmp);
+		inc();
 	}
     
 	container(const container& tmp) {
-		this->raw = tmp.raw;
+		*mRaw = *tmp.mRaw;
+		inc();
+		
 	}
 	
-	container& operator=(const container& tmp) {
-		if (this != &tmp) {
-			this->raw = new T;
-			*this->raw = *(tmp.raw);
-		}
-		return *this;
-	}
+	
 	~container()  {
-		delete raw;
+		delete mRaw;
 	}
 	T* returnPtr() {
-		return raw;
+		return mRaw;
 	}
 	T& returnRef() {
-		return *raw;
+		return *mRaw;
 	}
 };
 
 template < class T>
 class SmartPtr {
-	container<T>* p;
-	Ref* r;
+	container<T>* m_p;
 public:
-	~SmartPtr() {
-		r->deref();
-		if (r->getRef() == 0){
-			delete p;
-			delete r;
+	SmartPtr():
+	m_p(0)
+	{
+	}
+	SmartPtr(T* p):
+	m_p(*p)
+	{
+	}
+	SmartPtr(const SmartPtr<T>& other):
+	m_p(other.m_p)
+	{
+		if(m_p)
+		{
+			m_p->inc();
 		}
 	}
-	SmartPtr():p(nullptr),r(nullptr) {
 	
+	SmartPtr<T>& operator = (const SmartPtr<T>& other)
+	{
+		if(m_p)
+		{
+			m_p->deref();
+		}
+		m_p = other.m_p;
+		if(m_p)
+		{
+			m_p->inc();
+		}
 	}
-
-	SmartPtr(T tmp):r(nullptr) {
-		p = new container<T>(tmp);
-		r->inc();
+	
+	T* operator ->()
+	{
+		return m_p->returnPtr();
 	}
-
-	SmartPtr(T* tmp1) {
-		p = new container<T>(*tmp1,0);
-		r = new Ref();
-		r->inc();
-	}
-	// Copy Ctr with non const param
-	SmartPtr(SmartPtr& tmp) {
-		p = tmp.p;
-		r = tmp.r;
-		tmp.r->inc();
-	}
-
-	SmartPtr& operator=(SmartPtr& tmp) {
-		p = tmp.p;
-		r = tmp.r;
-		tmp.r->inc();
-		return *this;
-	}
-
-	T* operator->(){
-		return p->returnPtr();
-	}
-
-	T& operator*(){
-		return p->returnRef();
+	T& operator *()
+	{
+		return m_p->returnRef();
 	}
 };
